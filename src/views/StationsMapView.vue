@@ -211,8 +211,8 @@ function applyData(gasType) {
     type: 'geojson',
     data: processed,
     cluster: true,
-    clusterMaxZoom: 8,
-    clusterRadius: 25,
+    clusterMaxZoom: 16,
+    clusterRadius: 3,
     clusterProperties: {
       min_price: ['min', ['get', '_price']]
     }
@@ -234,8 +234,8 @@ function applyData(gasType) {
     paint: {
       'circle-color': clusterColorExpr,
       'circle-opacity': 0.85,
-      'circle-radius': ['step', ['get', 'point_count'], 18, 5, 22, 20, 28, 100, 36],
-      'circle-stroke-width': 2,
+      'circle-radius': 2,
+      'circle-stroke-width': 1,
       'circle-stroke-color': 'rgba(0,0,0,0.3)'
     }
   });
@@ -244,10 +244,11 @@ function applyData(gasType) {
     id: 'cluster-label',
     type: 'symbol',
     source: 'stations',
+    minzoom: 10,
     filter: ['has', 'point_count'],
     layout: {
       'text-field': ['concat', ['get', 'min_price'], '¢'],
-      'text-size': 24,
+      'text-size': 12,
       'text-allow-overlap': true
     },
     paint: {
@@ -264,8 +265,8 @@ function applyData(gasType) {
     filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': pointColorExpr,
-      'circle-radius': 7,
-      'circle-stroke-width': 2,
+      'circle-radius': 3,
+      'circle-stroke-width': 1,
       'circle-stroke-color': 'rgba(0,0,0,0.4)',
       'circle-opacity': 0.9
     }
@@ -276,7 +277,7 @@ function applyData(gasType) {
     type: 'symbol',
     source: 'stations',
     filter: ['!', ['has', 'point_count']],
-    minzoom: 8,
+    minzoom: 10,
     layout: {
       'text-field': [
         'concat',
@@ -287,8 +288,8 @@ function applyData(gasType) {
       'text-offset': [0, 1.6]
     },
     paint: {
-      'text-color': '#e4e4e7',
-      'text-halo-color': 'rgba(12,14,19,0.8)',
+      'text-color': '#18181b',
+      'text-halo-color': 'rgba(255,255,255,0.85)',
       'text-halo-width': 1
     }
   });
@@ -453,7 +454,7 @@ async function loadData() {
 onMounted(async () => {
   await nextTick();
 
-  const styleRes = await fetch('https://tiles.openfreemap.org/styles/dark');
+  const styleRes = await fetch('https://tiles.openfreemap.org/styles/positron');
   const style = await styleRes.json();
   style.glyphs = 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf';
 
