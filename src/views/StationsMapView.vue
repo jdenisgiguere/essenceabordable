@@ -373,6 +373,12 @@ onMounted(async () => {
   });
 
   map.value.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+  map.value.addControl(new maplibregl.GeolocateControl({
+    positionOptions: {
+      enableHighAccuracy: true
+    },
+    trackUserLocation: true
+  }), 'bottom-right');
   map.value.on('load', loadData);
 });
 
