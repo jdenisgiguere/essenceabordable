@@ -352,24 +352,20 @@ async function loadData() {
 onMounted(async () => {
   await nextTick();
 
+  const styleRes = await fetch('https://tiles.openfreemap.org/styles/dark');
+  const style = await styleRes.json();
+  style.glyphs = 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf';
+
   map.value = new maplibregl.Map({
     container: mapElement.value,
-    style: {
-      version: 8,
-      sources: {
-        carto: {
-          type: 'raster',
-          tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
-          tileSize: 256,
-          attribution: '© CartoDB © OpenStreetMap'
-        }
-      },
-      layers: [{ id: 'carto-tiles', type: 'raster', source: 'carto' }],
-      glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf'
-    },
+    style,
     center: [-72.5, 47.0],
     zoom: 5.5,
     maxZoom: 18
+  });
+
+  map.value.on('styleimagemissing', (e) => {
+    map.value.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
   });
 
   map.value.addControl(new maplibregl.NavigationControl(), 'bottom-right');
