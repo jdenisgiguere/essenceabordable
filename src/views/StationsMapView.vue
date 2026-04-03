@@ -98,6 +98,19 @@ let clusterLeaveHandler = null;
 let stationEnterHandler = null;
 let stationLeaveHandler = null;
 
+function updateViewportCount() {
+  if (!map.value || !map.value.getLayer('station-point')) return;
+
+  const clusterFeatures = map.value.queryRenderedFeatures({ layers: ['clusters'] });
+  const pointFeatures = map.value.queryRenderedFeatures({ layers: ['station-point'] });
+
+  const total =
+    clusterFeatures.reduce((sum, f) => sum + (f.properties?.point_count ?? 0), 0) +
+    pointFeatures.length;
+
+  stationCount.value = total.toLocaleString('fr-CA');
+}
+
 function getVisiblePriceExtent() {
   if (!map.value || !map.value.getLayer('station-point')) {
     return null;
@@ -197,7 +210,6 @@ function applyData(gasType) {
   }
 
   const processed = preprocessData(geojsonData.value, gasType);
-  stationCount.value = processed.features.length.toLocaleString('fr-CA');
 
   detachMapEvents();
 
@@ -298,8 +310,8 @@ function applyData(gasType) {
     }
   });
 
-  moveEndHandler = () => updateViewportColorScale();
-  zoomEndHandler = () => updateViewportColorScale();
+  moveEndHandler = () => { updateViewportColorScale(); updateViewportCount(); };
+  zoomEndHandler = () => { updateViewportColorScale(); updateViewportCount(); };
   map.value.on('moveend', moveEndHandler);
   map.value.on('zoomend', zoomEndHandler);
 
@@ -362,6 +374,7 @@ function applyData(gasType) {
   map.value.on('mouseleave', 'station-point', stationLeaveHandler);
 
   updateViewportColorScale();
+  map.value.once('idle', updateViewportCount);
 }
 
 function buildLocalities(data) {
