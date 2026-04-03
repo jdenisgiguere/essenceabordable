@@ -234,7 +234,7 @@ function applyData(gasType) {
     paint: {
       'circle-color': clusterColorExpr,
       'circle-opacity': 0.85,
-      'circle-radius': 2,
+      'circle-radius': 3,
       'circle-stroke-width': 1,
       'circle-stroke-color': 'rgba(0,0,0,0.3)'
     }
