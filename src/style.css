@@ -184,6 +184,7 @@ a {
   left: 16px;
   bottom: 16px;
   z-index: 20;
+  visibility: hidden; /* we don't use it yet */
 }
 
 .legend-bar {
