@@ -6,11 +6,35 @@
     </div>
 
     <div class="header-bar">
-      <div class="brand">
-        <div class="brand-icon">⛽</div>
-        <div>
-          <h1>Où l'essence est-elle abordable au Québec?</h1>
-          <p>Clusters par prix minimum</p>
+      <div class="header-left">
+        <div class="brand">
+          <div class="brand-icon">⛽</div>
+          <div>
+            <h1>Où l'essence est-elle abordable au Québec?</h1>
+            <p>Clusters par prix minimum</p>
+          </div>
+        </div>
+        <div v-if="localities.length" class="geocoder">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Rechercher une localité…"
+            autocomplete="off"
+            @input="onSearchInput"
+            @blur="onSearchBlur"
+            @keydown.down.prevent="highlightNext"
+            @keydown.up.prevent="highlightPrev"
+            @keydown.enter.prevent="selectHighlighted"
+            @keydown.escape="showSuggestions = false"
+          />
+          <ul v-if="showSuggestions && searchSuggestions.length" class="geocoder-suggestions">
+            <li
+              v-for="(s, i) in searchSuggestions"
+              :key="s.name"
+              :class="{ active: i === highlightIndex }"
+              @mousedown.prevent="selectLocality(s)"
+            >{{ s.name }}</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -58,6 +82,12 @@ const stationCount = ref('—');
 const isLoading = ref(true);
 const legendMin = ref('130.0¢');
 const legendMax = ref('200.0¢');
+
+const localities = shallowRef([]);
+const searchQuery = ref('');
+const searchSuggestions = ref([]);
+const showSuggestions = ref(false);
+const highlightIndex = ref(-1);
 
 let moveEndHandler = null;
 let zoomEndHandler = null;
@@ -329,6 +359,76 @@ function applyData(gasType) {
   updateViewportColorScale();
 }
 
+function buildLocalities(data) {
+  const index = new Map();
+  for (const feature of data.features) {
+    const address = feature.properties?.Address;
+    if (!address) continue;
+    const idx = address.lastIndexOf(',');
+    if (idx < 0) continue;
+    const locality = address.slice(idx + 1).trim();
+    if (!locality) continue;
+    const coords = feature.geometry?.coordinates;
+    if (!coords) continue;
+    if (!index.has(locality)) index.set(locality, []);
+    index.get(locality).push(coords);
+  }
+  localities.value = Array.from(index.entries())
+    .map(([name, coords]) => ({ name, coords }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+}
+
+function onSearchInput() {
+  highlightIndex.value = -1;
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) {
+    searchSuggestions.value = [];
+    showSuggestions.value = false;
+    return;
+  }
+  searchSuggestions.value = localities.value
+    .filter((l) => l.name.toLowerCase().includes(q))
+    .slice(0, 8);
+  showSuggestions.value = true;
+}
+
+function selectLocality(locality) {
+  searchQuery.value = locality.name;
+  showSuggestions.value = false;
+  highlightIndex.value = -1;
+  if (!map.value) return;
+  const { coords } = locality;
+  if (coords.length === 1) {
+    map.value.flyTo({ center: coords[0], zoom: 13 });
+    return;
+  }
+  const lngs = coords.map((c) => c[0]);
+  const lats = coords.map((c) => c[1]);
+  map.value.fitBounds(
+    [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+    { padding: 80, maxZoom: 14 }
+  );
+}
+
+function highlightNext() {
+  if (!showSuggestions.value) return;
+  highlightIndex.value = Math.min(highlightIndex.value + 1, searchSuggestions.value.length - 1);
+}
+
+function highlightPrev() {
+  if (!showSuggestions.value) return;
+  highlightIndex.value = Math.max(highlightIndex.value - 1, -1);
+}
+
+function selectHighlighted() {
+  const s = searchSuggestions.value[highlightIndex.value];
+  if (s) selectLocality(s);
+}
+
+function onSearchBlur() {
+  setTimeout(() => { showSuggestions.value = false; }, 150);
+}
+
 async function loadData() {
   let data;
 
@@ -345,6 +445,7 @@ async function loadData() {
   }
 
   geojsonData.value = data;
+  buildLocalities(data);
   applyData(currentGasType.value);
   isLoading.value = false;
 }
