@@ -211,8 +211,8 @@ function applyData(gasType) {
     type: 'geojson',
     data: processed,
     cluster: true,
-    clusterMaxZoom: 16,
-    clusterRadius: 3,
+    clusterMaxZoom: 20,
+    clusterRadius: 4,
     clusterProperties: {
       min_price: ['min', ['get', '_price']]
     }
@@ -249,11 +249,13 @@ function applyData(gasType) {
     layout: {
       'text-field': ['concat', ['get', 'min_price'], '¢'],
       'text-size': 12,
-      'text-allow-overlap': true
+      'text-allow-overlap': true,
+      'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+
     },
     paint: {
-      'text-color': '#fff',
-      'text-halo-color': 'rgba(0,0,0,0.6)',
+      'text-color': '#18181b',
+      'text-halo-color': 'rgba(255,255,255,0.85)',
       'text-halo-width': 1
     }
   });
@@ -285,7 +287,9 @@ function applyData(gasType) {
         '¢'
       ],
       'text-size': 14,
-      'text-offset': [0, 1.6]
+      'text-offset': [0, 1.6],
+      'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+      'text-allow-overlap': true
     },
     paint: {
       'text-color': '#18181b',
