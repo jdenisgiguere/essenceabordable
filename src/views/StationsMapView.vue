@@ -222,12 +222,12 @@ function applyData(gasType) {
   map.value.addSource('stations', {
     type: 'geojson',
     data: processed,
-    cluster: true,
-    clusterMaxZoom: 20,
-    clusterRadius: 4,
-    clusterProperties: {
+    // cluster: true,
+    // clusterMaxZoom: 20,
+    // clusterRadius: 2,
+    /*clusterProperties: {
       min_price: ['min', ['get', '_price']]
-    }
+    }*/
   });
 
   const clusterColorExpr = ['interpolate', ['linear'], ['get', 'min_price'],
@@ -246,9 +246,9 @@ function applyData(gasType) {
     paint: {
       'circle-color': clusterColorExpr,
       'circle-opacity': 0.85,
-      'circle-radius': 3,
-      'circle-stroke-width': 1,
-      'circle-stroke-color': 'rgba(0,0,0,0.3)'
+      'circle-radius': 2,
+      // 'circle-stroke-width': 1,
+      //'circle-stroke-color': 'rgba(0,0,0,0.3)'
     }
   });
 
@@ -279,9 +279,17 @@ function applyData(gasType) {
     filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': pointColorExpr,
-      'circle-radius': 3,
-      'circle-stroke-width': 1,
-      'circle-stroke-color': 'rgba(0,0,0,0.4)',
+      'circle-radius': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        5, 1.5,   // zoom 5  → rayon 1.5px
+        10, 3,    // zoom 10 → rayon 3px
+        14, 6,    // zoom 14 → rayon 6px
+        18, 12    // zoom 18 → rayon 12px
+      ],
+      // 'circle-stroke-width': 1,
+      // 'circle-stroke-color': 'rgba(0,0,0,0.4)',
       'circle-opacity': 0.9
     }
   });
