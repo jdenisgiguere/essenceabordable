@@ -793,30 +793,23 @@ const StationsMapView = {
       let data;
 
       try {
-        const localResponse = await fetch('./stations.geojson');
-        if (!localResponse.ok) {
-          throw new Error(`HTTP ${localResponse.status}`);
+        const remoteResponse = await fetch('https://regieessencequebec.ca/stations.geojson.gz');
+        if (!remoteResponse.ok) {
+          throw new Error(`HTTP ${remoteResponse.status}`);
         }
-
-        data = await localResponse.json();
-      } catch {
-        try {
-          const remoteResponse = await fetch('https://regieessencequebec.ca/stations.geojson');
-          if (!remoteResponse.ok) {
-            throw new Error(`HTTP ${remoteResponse.status}`);
-          }
 
           data = await remoteResponse.json();
         } catch {
           console.warn('Failed to load live dataset, using sample data instead');
           data = generateSampleData();
         }
+        geojsonData.value = data;
+        applyData(currentGasType.value);
+        isLoading.value = false;
       }
 
-      geojsonData.value = data;
-      applyData(currentGasType.value);
-      isLoading.value = false;
-    }
+
+
 
     onMounted(async () => {
       await nextTick();
@@ -921,8 +914,7 @@ const ComparePlaceholderView = {
       <div class="placeholder-card">
         <h2>Route de comparaison</h2>
         <p>
-          Cette vue est prête pour accueillir une autre dataviz. Le routeur est en place,
-          donc vous pouvez ajouter un second composant ici sans toucher à la vue initiale.
+          Revenez plus tard!
         </p>
       </div>
     </div>
