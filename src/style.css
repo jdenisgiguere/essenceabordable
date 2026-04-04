@@ -154,6 +154,28 @@ a {
   background: rgba(0, 0, 0, 0.05);
 }
 
+.geocoder-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.geocoder-clear:hover {
+  color: #18181b;
+}
+
+.brand-filter input {
+  padding-right: 28px;
+}
+
 .route-nav {
   display: flex;
   flex-direction: column;

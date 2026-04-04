@@ -36,6 +36,29 @@
             >{{ s.name }}</li>
           </ul>
         </div>
+        <div v-if="brands.length" class="geocoder brand-filter">
+          <input
+            v-model="brandQuery"
+            type="text"
+            placeholder="Filtrer par marque…"
+            autocomplete="off"
+            @input="onBrandInput"
+            @blur="onBrandBlur"
+            @keydown.down.prevent="brandHighlightNext"
+            @keydown.up.prevent="brandHighlightPrev"
+            @keydown.enter.prevent="selectBrandHighlighted"
+            @keydown.escape="showBrandSuggestions = false"
+          />
+          <button v-if="selectedBrand" class="geocoder-clear" @mousedown.prevent="clearBrand" title="Effacer le filtre">×</button>
+          <ul v-if="showBrandSuggestions && brandSuggestions.length" class="geocoder-suggestions">
+            <li
+              v-for="(b, i) in brandSuggestions"
+              :key="b"
+              :class="{ active: i === brandHighlightIndex }"
+              @mousedown.prevent="selectBrand(b)"
+            >{{ b }}</li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -88,6 +111,13 @@ const searchQuery = ref('');
 const searchSuggestions = ref([]);
 const showSuggestions = ref(false);
 const highlightIndex = ref(-1);
+
+const brands = shallowRef([]);
+const selectedBrand = ref('');
+const brandQuery = ref('');
+const brandSuggestions = ref([]);
+const showBrandSuggestions = ref(false);
+const brandHighlightIndex = ref(-1);
 
 let moveEndHandler = null;
 let zoomEndHandler = null;
@@ -383,6 +413,7 @@ function applyData(gasType) {
 
   updateViewportColorScale();
   map.value.once('idle', updateViewportCount);
+  applyBrandFilter();
 }
 
 function buildLocalities(data) {
@@ -455,6 +486,74 @@ function onSearchBlur() {
   setTimeout(() => { showSuggestions.value = false; }, 150);
 }
 
+function buildBrands(data) {
+  const set = new Set();
+  for (const feature of data.features) {
+    const brand = feature.properties?.brand;
+    if (brand) set.add(brand);
+  }
+  brands.value = Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
+}
+
+function applyBrandFilter() {
+  if (!map.value) return;
+  const noCluster = ['!', ['has', 'point_count']];
+  const filter = selectedBrand.value
+    ? ['all', noCluster, ['==', ['get', 'brand'], selectedBrand.value]]
+    : noCluster;
+  if (map.value.getLayer('station-point')) map.value.setFilter('station-point', filter);
+  if (map.value.getLayer('station-label')) map.value.setFilter('station-label', filter);
+  map.value.once('idle', updateViewportCount);
+  updateViewportColorScale();
+}
+
+function onBrandInput() {
+  brandHighlightIndex.value = -1;
+  const q = brandQuery.value.trim().toLowerCase();
+  if (!q) {
+    brandSuggestions.value = [];
+    showBrandSuggestions.value = false;
+    return;
+  }
+  brandSuggestions.value = brands.value.filter((b) => b.toLowerCase().includes(q)).slice(0, 8);
+  showBrandSuggestions.value = true;
+}
+
+function selectBrand(brand) {
+  selectedBrand.value = brand;
+  brandQuery.value = brand;
+  showBrandSuggestions.value = false;
+  brandHighlightIndex.value = -1;
+  applyBrandFilter();
+}
+
+function clearBrand() {
+  selectedBrand.value = '';
+  brandQuery.value = '';
+  showBrandSuggestions.value = false;
+  brandHighlightIndex.value = -1;
+  applyBrandFilter();
+}
+
+function brandHighlightNext() {
+  if (!showBrandSuggestions.value) return;
+  brandHighlightIndex.value = Math.min(brandHighlightIndex.value + 1, brandSuggestions.value.length - 1);
+}
+
+function brandHighlightPrev() {
+  if (!showBrandSuggestions.value) return;
+  brandHighlightIndex.value = Math.max(brandHighlightIndex.value - 1, -1);
+}
+
+function selectBrandHighlighted() {
+  const b = brandSuggestions.value[brandHighlightIndex.value];
+  if (b) selectBrand(b);
+}
+
+function onBrandBlur() {
+  setTimeout(() => { showBrandSuggestions.value = false; }, 150);
+}
+
 async function loadData() {
   let data;
 
@@ -472,6 +571,7 @@ async function loadData() {
 
   geojsonData.value = data;
   buildLocalities(data);
+  buildBrands(data);
   applyData(currentGasType.value);
   isLoading.value = false;
 }
