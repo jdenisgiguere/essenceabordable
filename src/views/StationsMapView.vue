@@ -96,6 +96,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import maplibregl from 'maplibre-gl';
 import { buildColorExpr, COLOR_STOPS, GAS_TYPES, preprocessData } from '../utils/mapPricing';
 import { generateSampleData } from '../utils/sampleData';
+import { buildPopupHTML, buildStationFilter, extractBrands, indexLocalities } from '../utils/stationsData';
 
 const mapElement = ref(null);
 const map = shallowRef(null);
@@ -380,22 +381,9 @@ function applyData(gasType) {
       prices = [];
     }
 
-    const priceRows = prices.map((price) => {
-      const isHighlight = price.GasType === gasType;
-      return `<div class="popup-price-row ${isHighlight ? 'highlight' : ''}">
-        <span class="popup-gas-type">${price.GasType}</span>
-        <span class="popup-price-val">${price.Price}</span>
-      </div>`;
-    }).join('');
-
     new maplibregl.Popup({ offset: 12, maxWidth: '280px' })
       .setLngLat(feature.geometry.coordinates)
-      .setHTML(`
-        <div class="popup-name">${props.Name || 'Station'}</div>
-        <div class="popup-brand">${props.brand || ''}</div>
-        <div class="popup-address">${props.Address || ''}</div>
-        <div class="popup-prices">${priceRows}</div>
-      `)
+      .setHTML(buildPopupHTML(props, prices, gasType))
       .addTo(map.value);
   };
 
@@ -417,22 +405,7 @@ function applyData(gasType) {
 }
 
 function buildLocalities(data) {
-  const index = new Map();
-  for (const feature of data.features) {
-    const address = feature.properties?.Address;
-    if (!address) continue;
-    const idx = address.lastIndexOf(',');
-    if (idx < 0) continue;
-    const locality = address.slice(idx + 1).trim();
-    if (!locality) continue;
-    const coords = feature.geometry?.coordinates;
-    if (!coords) continue;
-    if (!index.has(locality)) index.set(locality, []);
-    index.get(locality).push(coords);
-  }
-  localities.value = Array.from(index.entries())
-    .map(([name, coords]) => ({ name, coords }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  localities.value = indexLocalities(data);
 }
 
 function onSearchInput() {
@@ -487,20 +460,12 @@ function onSearchBlur() {
 }
 
 function buildBrands(data) {
-  const set = new Set();
-  for (const feature of data.features) {
-    const brand = feature.properties?.brand;
-    if (brand) set.add(brand);
-  }
-  brands.value = Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
+  brands.value = extractBrands(data);
 }
 
 function applyBrandFilter() {
   if (!map.value) return;
-  const noCluster = ['!', ['has', 'point_count']];
-  const filter = selectedBrand.value
-    ? ['all', noCluster, ['==', ['get', 'brand'], selectedBrand.value]]
-    : noCluster;
+  const filter = buildStationFilter(selectedBrand.value);
   if (map.value.getLayer('station-point')) map.value.setFilter('station-point', filter);
   if (map.value.getLayer('station-label')) map.value.setFilter('station-label', filter);
   map.value.once('idle', updateViewportCount);
