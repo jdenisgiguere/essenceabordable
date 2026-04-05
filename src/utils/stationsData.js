@@ -42,6 +42,24 @@ export function extractBrands(data) {
 }
 
 /**
+ * Return brand names ranked by station count (descending).
+ * Ties are broken alphabetically (fr locale).
+ * @param {object} data  GeoJSON FeatureCollection
+ * @returns {string[]}
+ */
+export function rankBrandsByFrequency(data) {
+  const counts = new Map();
+  for (const feature of data.features) {
+    const brand = feature.properties?.brand;
+    if (!brand) continue;
+    counts.set(brand, (counts.get(brand) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort(([a, countA], [b, countB]) => countB - countA || a.localeCompare(b, 'fr'))
+    .map(([brand]) => brand);
+}
+
+/**
  * Build a MapLibre filter expression that excludes clusters and optionally
  * restricts to a single brand.
  * @param {string} brand  Brand name, or empty string / falsy for no brand filter

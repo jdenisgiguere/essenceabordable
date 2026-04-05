@@ -42,6 +42,7 @@
             type="text"
             placeholder="Filtrer par marque…"
             autocomplete="off"
+            @focus="onBrandFocus"
             @input="onBrandInput"
             @blur="onBrandBlur"
             @keydown.down.prevent="brandHighlightNext"
@@ -96,7 +97,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import maplibregl from 'maplibre-gl';
 import { buildColorExpr, COLOR_STOPS, GAS_TYPES, preprocessData } from '../utils/mapPricing';
 import { generateSampleData } from '../utils/sampleData';
-import { buildPopupHTML, buildStationFilter, extractBrands, indexLocalities } from '../utils/stationsData';
+import { buildPopupHTML, buildStationFilter, extractBrands, indexLocalities, rankBrandsByFrequency } from '../utils/stationsData';
 
 const mapElement = ref(null);
 const map = shallowRef(null);
@@ -114,6 +115,7 @@ const showSuggestions = ref(false);
 const highlightIndex = ref(-1);
 
 const brands = shallowRef([]);
+const brandsByFrequency = shallowRef([]);
 const selectedBrand = ref('');
 const brandQuery = ref('');
 const brandSuggestions = ref([]);
@@ -461,6 +463,7 @@ function onSearchBlur() {
 
 function buildBrands(data) {
   brands.value = extractBrands(data);
+  brandsByFrequency.value = rankBrandsByFrequency(data);
 }
 
 function applyBrandFilter() {
@@ -468,16 +471,24 @@ function applyBrandFilter() {
   const filter = buildStationFilter(selectedBrand.value);
   if (map.value.getLayer('station-point')) map.value.setFilter('station-point', filter);
   if (map.value.getLayer('station-label')) map.value.setFilter('station-label', filter);
-  map.value.once('idle', updateViewportCount);
-  updateViewportColorScale();
+  map.value.once('idle', () => {
+    updateViewportColorScale();
+    updateViewportCount();
+  });
+}
+
+function onBrandFocus() {
+  if (brandQuery.value.trim()) return;
+  brandSuggestions.value = brandsByFrequency.value.slice(0, 8);
+  showBrandSuggestions.value = true;
 }
 
 function onBrandInput() {
   brandHighlightIndex.value = -1;
   const q = brandQuery.value.trim().toLowerCase();
   if (!q) {
-    brandSuggestions.value = [];
-    showBrandSuggestions.value = false;
+    brandSuggestions.value = brandsByFrequency.value.slice(0, 8);
+    showBrandSuggestions.value = true;
     return;
   }
   brandSuggestions.value = brands.value.filter((b) => b.toLowerCase().includes(q)).slice(0, 8);

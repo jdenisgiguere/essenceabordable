@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPopupHTML, buildStationFilter, extractBrands, indexLocalities } from './stationsData';
+import { buildPopupHTML, buildStationFilter, extractBrands, indexLocalities, rankBrandsByFrequency } from './stationsData';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -111,6 +111,51 @@ describe('extractBrands', () => {
 
   it('returns an empty array for an empty collection', () => {
     expect(extractBrands(makeCollection())).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// rankBrandsByFrequency
+// ---------------------------------------------------------------------------
+
+describe('rankBrandsByFrequency', () => {
+  it('ranks brands by station count, most frequent first', () => {
+    const data = makeCollection(
+      makeFeature('1 rue A, Montréal', [-73, 45], 'Shell'),
+      makeFeature('2 rue B, Montréal', [-73, 45], 'Shell'),
+      makeFeature('3 rue C, Laval', [-73.7, 45.7], 'Esso'),
+      makeFeature('4 rue D, Laval', [-73.7, 45.7], 'Esso'),
+      makeFeature('5 rue E, Québec', [-71, 46], 'Esso'),
+      makeFeature('6 rue F, Québec', [-71, 46], 'Petro-Canada'),
+    );
+
+    const brands = rankBrandsByFrequency(data);
+    expect(brands[0]).toBe('Esso');       // 3 stations
+    expect(brands[1]).toBe('Shell');      // 2 stations
+    expect(brands[2]).toBe('Petro-Canada'); // 1 station
+  });
+
+  it('breaks ties alphabetically (fr locale)', () => {
+    const data = makeCollection(
+      makeFeature('1 rue A, Montréal', [-73, 45], 'Shell'),
+      makeFeature('2 rue B, Laval', [-73.7, 45.7], 'Esso'),
+    );
+
+    const brands = rankBrandsByFrequency(data);
+    expect(brands).toEqual(['Esso', 'Shell']); // both count=1, alpha order
+  });
+
+  it('skips features with no brand', () => {
+    const data = makeCollection(
+      makeFeature('1 rue A, Montréal', [-73, 45], null),
+      makeFeature('2 rue B, Laval', [-73.7, 45.7], 'Esso'),
+    );
+
+    expect(rankBrandsByFrequency(data)).toEqual(['Esso']);
+  });
+
+  it('returns an empty array for an empty collection', () => {
+    expect(rankBrandsByFrequency(makeCollection())).toEqual([]);
   });
 });
 
