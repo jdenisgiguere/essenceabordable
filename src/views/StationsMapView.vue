@@ -255,12 +255,6 @@ function applyData(gasType) {
   map.value.addSource('stations', {
     type: 'geojson',
     data: processed,
-    // cluster: true,
-    // clusterMaxZoom: 20,
-    // clusterRadius: 2,
-    /*clusterProperties: {
-      min_price: ['min', ['get', '_price']]
-    }*/
   });
 
   const clusterColorExpr = ['interpolate', ['linear'], ['get', 'min_price'],
@@ -280,8 +274,6 @@ function applyData(gasType) {
       'circle-color': clusterColorExpr,
       'circle-opacity': 0.85,
       'circle-radius': 2,
-      // 'circle-stroke-width': 1,
-      //'circle-stroke-color': 'rgba(0,0,0,0.3)'
     }
   });
 
@@ -321,8 +313,6 @@ function applyData(gasType) {
         14, 6,    // zoom 14 → rayon 6px
         18, 12    // zoom 18 → rayon 12px
       ],
-      // 'circle-stroke-width': 1,
-      // 'circle-stroke-color': 'rgba(0,0,0,0.4)',
       'circle-opacity': 0.9
     }
   });
